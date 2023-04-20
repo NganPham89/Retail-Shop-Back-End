@@ -4,7 +4,7 @@ const { Product, Category, Tag, ProductTag } = require('../../models');
 router.get('/', async (req, res) => {
   try {
     const productData = await Product.findAll({
-      include: [{model: Category}, {model: Tag, through: ProductTag, as: "tagIds"}],
+      include: [{ model: Category }, { model: Tag, through: ProductTag, as: "tagIds" }],
     });
     res.status(200).json(productData);
   } catch (err) {
@@ -15,10 +15,10 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const productData = await Product.findByPk(req.params.id, {
-      include: [{ model: Category}, {model: Tag, through: ProductTag, as: "tagIds"}],
+      include: [{ model: Category }, { model: Tag, through: ProductTag, as: "tagIds" }],
     });
-    if(!productData) {
-      res.status(400).json({message:"There is no product with this id"});
+    if (!productData) {
+      res.status(400).json({ message: "There is no product with this id" });
       return;
     }
     res.status(200).json(productData);
@@ -59,46 +59,50 @@ router.post('/', (req, res) => {
     });
 });
 
-// update product
-router.put('/:id', (req, res) => {
-  // update product data
-  Product.update(req.body, {
-    where: {
-      id: req.params.id,
-    },
-  })
-    .then((product) => {
-      // find all associated tags from ProductTag
-      return ProductTag.findAll({ where: { product_id: req.params.id } });
-    })
-    .then((productTags) => {
-      // get list of current tag_ids
-      const productTagIds = productTags.map(({ tag_id }) => tag_id);
-      // create filtered list of new tag_ids
-      const newProductTags = req.body.tagIds
-        .filter((tag_id) => !productTagIds.includes(tag_id))
-        .map((tag_id) => {
-          return {
-            product_id: req.params.id,
-            tag_id,
-          };
-        });
-      // figure out which ones to remove
-      const productTagsToRemove = productTags
-        .filter(({ tag_id }) => !req.body.tagIds.includes(tag_id))
-        .map(({ id }) => id);
+router.put("/:id", async (req, res) => {
+  try {
+      const productData = await Product.update(req.body, {
+          where: {
+              id: req.params.id,
+          },
+      })
+      if (!productData) {
+          res.status(400).json({ message: "No product with that id found" });
+          return;
+      }
 
-      // run both actions
-      return Promise.all([
-        ProductTag.destroy({ where: { id: productTagsToRemove } }),
-        ProductTag.bulkCreate(newProductTags),
+      const productTagData = await ProductTag.findAll({
+          where: {
+              product_id: req.params.id,
+          },
+      })
+
+      const productTagIds = productTagData.map(({tag_id}) => tag_id);
+      const newProductTags = req.body.tagIds
+          .filter((tag_id) => !productTagIds.includes(tag_id))
+          .map((tag_id) => {
+              return {
+                  product_id: req.params.id,
+                  tag_id,
+              };
+          });
+
+      const productTagsToRemove = productTagData
+          .filter(({tag_id}) => !req.body.tagIds.includes(tag_id))
+          .map(({id}) => id);
+
+      const newProductTagData = await Promise.all([
+          ProductTag.destroy({where: {id: productTagsToRemove}}),
+          ProductTag.bulkCreate(newProductTags),
       ]);
-    })
-    .then((updatedProductTags) => res.json(updatedProductTags))
-    .catch((err) => {
-      // console.log(err);
-      res.status(400).json(err);
-    });
+
+      res.status(200).json(newProductTagData, {
+        message: `Product with id:${req.params.id} updated`,
+      });
+
+  } catch (err) {
+      res.status(500).json(err);
+  }
 });
 
 router.delete('/:id', async (req, res) => {
@@ -108,11 +112,11 @@ router.delete('/:id', async (req, res) => {
         id: req.params.id,
       },
     })
-    if(!productData) {
-      res.status(400).json({message: "There is no product with that id"});
+    if (!productData) {
+      res.status(400).json({ message: "There is no product with that id" });
       return;
     };
-    res.status(200).json({message: `Product with id:${req.params.id} has been deleted`});
+    res.status(200).json({ message: `Product with id:${req.params.id} has been deleted` });
   } catch (err) {
     res.status(500).json(err);
   }
