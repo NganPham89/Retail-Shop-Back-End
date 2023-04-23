@@ -3,7 +3,7 @@ A back end for an internet retail shopping site, built with Node, Express, MySQL
 
 ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
-A video demo of the app can be found [here](https://drive.google.com/file/d/1_TtTdG9dwiYl8jtj4jOGKdyj1SLawgtn/view)
+A video demo of the app can be found [here](https://drive.google.com/file/d/11a1-Cj32JJUF0RVaaQaYw1MOuA8rxwIT/view)
 
 ## Screenshot
 
